@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 howdoi
 ===================
@@ -11,6 +12,8 @@ install_requires = [
     'mock>=1.3.0',
     'howdoi>=1.1.7',
     'PyYAML==3.11',
+    'ndg-httpsclient>=0.4.0',
+    'pyOpenSSL>=0.15.1',
 ]
 
 tests_require = ['mock']
@@ -25,6 +28,7 @@ setup(
     entry_points={
         'console_scripts': [
             'bot-run = main:main',
+            'bot-test = main:test',
         ]},
     description='A Telegram bot',
     long_description=__doc__,

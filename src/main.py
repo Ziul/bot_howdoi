@@ -1,26 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import os
-import logging
-import logging.config
-from telegram import Updater, Update, InlineQueryResultPhoto, ParseMode, InlineQueryResultArticle
+# from telegram import Updater, Update,
+# InlineQueryResultPhoto, ParseMode, InlineQueryResultArticle
+from telegram import Updater, InlineQueryResultPhoto, ChatAction
 from globals import *
+from howdoi.howdoi import howdoi as howdoi_call
 
 
 def main():
-    # load the logging configuration
-
-    real_path = os.path.dirname(os.path.realpath(__file__))
-    logging.config.fileConfig(real_path + '/logging.ini')
-    logger = logging.getLogger(__name__)
 
     # Get the dispatcher to register handlers
-    token = "162832990:AAEDSmIAFyeNptEVYgd9a8qBnh-E8J-nT5s"
     updater = Updater(token=token)
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
     dp.addTelegramCommandHandler("start", start)
+    dp.addTelegramCommandHandler("howdoi", howdoi)
+    dp.addTelegramInlineHandler(inlinequery)
 
     # log all errors
     dp.addErrorHandler(error)
@@ -48,6 +44,7 @@ def error(bot, update, error):
 
 
 def inlinequery(bot, update):
+    logger.info('Inline query')
     if update.inline_query is not None and update.inline_query.query:
         api = "https://api.deckbrew.com/mtg/cards/typeahead?q=<NAME>"
         query = update.inline_query.query.split("//")[0].strip()
@@ -59,10 +56,10 @@ def inlinequery(bot, update):
         if(cards == []):
             return
         if (len(cards) == 1):
-            images.append(InlineQueryResultPhoto(id=hex(getrandbits(64))[2:],
-                                                 photo_url=cards[0]['editions'][
-                                                     0]['image_url'],
-                                                 thumb_url=cards[0]['editions'][0]['image_url']))
+            images.append(InlineQueryResultPhoto(
+                id=hex(getrandbits(64))[2:], photo_url=cards[
+                    0]['editions'][0]['image_url'],
+                thumb_url=cards[0]['editions'][0]['image_url']))
             logger.debug("Card {0} : {1}".format(
                 cards[0]['name'], cards[0]['editions'][0]['image_url']))
             bot.answerInlineQuery(update.inline_query.id, results=images)
@@ -81,5 +78,31 @@ def inlinequery(bot, update):
             i = i + 1
         bot.answerInlineQuery(update.inline_query.id, results=images)
 
+
+def howdoi(bot, update, args):
+    logger.info("How do I received! [{}]".format(args))
+    chat_id = update.message.chat_id
+    bot.sendChatAction(chat_id, action=ChatAction.TYPING)
+    args = {'all': False,
+            'color': False,
+            'num_answers': 1,
+            'pos': 1,
+            'query': args}
+    result = howdoi_call(args).encode('utf-8', 'ignore')
+    logger.debug(result)
+    bot.sendMessage(chat_id, result)
+
 if __name__ == '__main__':
     main()
+
+
+def test():
+    from sys import argv
+    argv = argv[1:]
+    args = {'all': False,
+            'color': False,
+            'num_answers': 1,
+            'pos': 1,
+            'query': argv}
+    result = howdoi_call(args).encode('utf-8', 'ignore')
+    print result
