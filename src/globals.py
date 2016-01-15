@@ -12,5 +12,5 @@ real_path = os.path.dirname(os.path.realpath(__file__))
 logging.config.fileConfig(real_path + '/logging.ini')
 logger = logging.getLogger(__name__)
 
-token = "162832990:AAEDSmIAFyeNptEVYgd9a8qBnh-E8J-nT5s"
+token = "TOKEN"
 bot = TeleBot(token)

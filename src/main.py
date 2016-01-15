@@ -105,4 +105,4 @@ def test():
             'pos': 1,
             'query': argv}
     result = howdoi_call(args).encode('utf-8', 'ignore')
-    print result
+    print(result)

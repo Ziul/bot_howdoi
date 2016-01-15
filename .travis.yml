@@ -1,0 +1,17 @@
+language: python
+
+sudo: false
+
+python:
+ - "2.7"
+ - "3.4"
+
+install:
+ - sudo apt-get install python2.7 python-pip
+ - pip install -e .
+
+before_script:
+ - bot-test unity python integration
+
+script:
+ - python tests/run.py

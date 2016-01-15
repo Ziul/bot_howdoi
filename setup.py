@@ -22,9 +22,9 @@ tests_require = ['mock']
 setup(
     name="HowDoIBot",
     version='0.1.0',
-    author='Simião, Luiz Oliveira, Gust',
+    author='Luiz Oliveira',
     author_email='ziuloliveira@gmail.com',
-    url='https://github.com/Ziul/DeDBot',
+    url='https://github.com/Ziul/bot_howdoi',
     entry_points={
         'console_scripts': [
             'bot-run = main:main',
@@ -36,6 +36,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     zip_safe=True,
+    test_suite="tests.run.runtests",
     install_requires=install_requires,
     include_package_data=True,
     classifiers=[
