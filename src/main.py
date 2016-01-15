@@ -101,4 +101,5 @@ def test():
     update.inline_query.query = argv
     update.to_dict().keys = Mock(return_value={'message': argv})
     result = howdoi(bot, update, argv)
-    print('\n' + result)
+    print(' ')
+    print(result)
