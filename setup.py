@@ -9,14 +9,12 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'python-telegram-bot>=3.1.2',
-    'mock>=1.3.0',
-    'howdoi>=1.1.7',
-    'PyYAML==3.11',
+    'mock',
+    'howdoi',
+    'PyYAML',
     'ndg-httpsclient>=0.4.0',
     'pyOpenSSL>=0.15.1',
 ]
-
-tests_require = ['mock']
 
 
 setup(

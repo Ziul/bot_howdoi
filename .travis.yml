@@ -3,10 +3,14 @@ language: python
 sudo: false
 
 python:
- - "2.7"
- - "3.4"
+  - "2.7"
+  - "3.3"
+  - "3.4"
 
 install:
+ - git submodule foreach git checkout inlinebots 
+ - pip install -r requirements.txt
+ - git submodule foreach pip install -e .
  - pip install -e .
 
 before_script:

@@ -1,6 +1,5 @@
 global logger
 global bot
-from telebot import TeleBot
 
 import os
 import logging
@@ -13,4 +12,3 @@ logging.config.fileConfig(real_path + '/logging.ini')
 logger = logging.getLogger(__name__)
 
 token = "TOKEN"
-bot = TeleBot(token)
