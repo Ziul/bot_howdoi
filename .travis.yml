@@ -13,8 +13,6 @@ install:
  - git submodule foreach pip install -e .
  - pip install -e .
 
-before_script:
- - bot-test unity python integration
-
 script:
+ - bot-test unity python integration
  - python tests/run.py
