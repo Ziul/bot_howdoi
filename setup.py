@@ -8,12 +8,8 @@ A Telegram bot
 from setuptools import setup, find_packages
 
 install_requires = [
-    'python-telegram-bot>=3.1.2',
     'mock',
     'howdoi',
-    'PyYAML',
-    'ndg-httpsclient>=0.4.0',
-    'pyOpenSSL>=0.15.1',
     'telepot>=8.3',
 ]
 
