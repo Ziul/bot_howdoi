@@ -1,105 +1,130 @@
 # -*- coding: utf-8 -*-
 
 # from telegram import ParseMode
-from telegram import Updater, ChatAction, InlineQueryResultArticle
+# from telegram.ext import Updater, InlineQueryHandler, CommandHandler
+# from telegram import ChatAction, InlineQueryResultArticle
+import telepot
+from telepot.namedtuple import InlineQueryResultArticle, InputTextMessageContent
+from telepot.delegate import per_chat_id, per_inline_from_id, create_open
+from urllib3.exceptions import ReadTimeoutError
+
 from globals import token, logger
-import re
 from howdoi.howdoi import howdoi as howdoi_call
+from howdoi.howdoi import _get_links
 from random import getrandbits
 
 
-def main():
+class HowDoIBot(telepot.helper.InlineUserHandler, telepot.helper.AnswererMixin):
+    """HowDoIBot"""
 
-    # Get the dispatcher to register handlers
-    updater = Updater(token=token)
-    dp = updater.dispatcher
+    def __init__(self, seed_tuple, timeout):
+        super(HowDoIBot, self).__init__(seed_tuple, timeout)
 
-    # on different commands - answer in Telegram
-    dp.addTelegramCommandHandler("start", start)
-    dp.addTelegramCommandHandler("howdoi", howdoi)
-    dp.addTelegramInlineHandler(inlinequery)
+    def on_chat_message(self, msg):
+        content_type, chat_type, chat_id = telepot.glance(msg)
 
-    # log all errors
-    dp.addErrorHandler(error)
+        if content_type != 'text':
+            logger.info('{} message received'.format(content_type))
+            return
 
-    logger.info('Starting new bot')
-    # Start the Bot
-    updater.start_polling()
+        command = msg['text'].strip().lower()
 
-    # Block until the you presses Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
-    # start_polling() is non-blocking and will stop the bot gracefully.
-    updater.idle()
+        if ('/start' in command):
+            self.start(msg)
+        elif ('/howdoi' in command):
+            self.howdoi(msg)
+        else:
+            logger.critical(msg)
 
+    # Ignore group messages
+    def on_edited_chat_message(self, msg):
+        self.on_chat_message(msg)
 
-def start(bot, update, args):
-    chat_id = update.message.chat_id
-    bot.sendMessage(chat_id, "Hey!")
+    def escape_markdown(self, text):
+        """Helper function to escape telegram markup symbols"""
+        return '```{}```'.format(text)
 
+    def howdoi(self, msg):
+        content_type, chat_type, chat_id = telepot.glance(msg)
+        msg['text'] = ' '.join(msg['text'].split()[1:])
+        logger.info("How do I received! [{}]".format(msg['text']))
+        self.bot.sendChatAction(chat_id, 'typing')
+        args = {'all': True,
+                'color': False,
+                'num_answers': 1,
+                'pos': 1,
+                'query': msg['text']}
+        try:
+            result = howdoi_call(args)
+            # result = self.escape_markdown(result)
+        except ReadTimeoutError:
+            result = 'Timeout finding some answer, sorry :('
+        except Exception as e:
+            logger.critical(e)
+        # self.sender.sendMessage(result, chat_id=chat_id)
+        self.bot.sendMessage(chat_id, result)
 
-def error(bot, update, error):
-    logger.critical('Update "%s" caused error "%s"' % (update, error))
-    chat_id = update.message.chat_id
-    bot.sendMessage(chat_id, text='Sorry {}, but {}'.format(
-        update.first_name, error))
+    def start(self, msg):
+        print(msg)
+        self.bot.sendMessage(msg['chat']['id'], "Hey *{}*!".format(
+            msg['from']['first_name']), parse_mode='Markdown')
+        # self.sender.sendMessage("Hey *{}*!".format(
+        #     msg['from']['first_name']), parse_mode='Markdown')
+        # import ipdb
+        # ipdb.set_trace()
 
+    def on_inline_query(self, msg):
+        query_id, from_id, query_string = telepot.glance(
+            msg, flavor='inline_query')
+        logger.info('Inline ping from {}'.format(from_id))
 
-def escape_markdown(text):
-    """Helper function to escape telegram markup symbols"""
-    escape_chars = '\*_`\['
-    return re.sub(r'([%s])' % escape_chars, r'\\\1', text)
+        def compute_answer():
+            link_results = _get_links(msg['query'])
+            results = [w.split('/')[-1].replace('-', ' ')
+                       for w in link_results]
+            articles = [{'type': 'article',
+                         'id': str(hex(getrandbits(64))[2:]),
+                         'title': title,
+                         'message_text': text}
+                        for title, text in zip(results, link_results)]
+            return articles
 
+        self.answerer.answer(msg, compute_answer)
 
-def inlinequery(bot, update):
-    result = ''
-    _hex = hex(getrandbits(64))[2:]
-    results = list()
-    logger.info('Inline: ' + update.inline_query.query)
-    if update.inline_query is not None and update.inline_query.query:
-        query = update.inline_query.query.split(' ')
-        result = howdoi(bot, update, query)
-        results.append(
-            InlineQueryResultArticle(
-                id=_hex,
-                title="StackOverflow",
-                message_text="*%s*" % query,
-                # parse_mode=ParseMode.MARKDOWN,
-            )
-        )
-
-        bot.answerInlineQuery(update.inline_query.id, results=results)
-    logger.debug('result=' + result)
-    return results
-
-
-def howdoi(bot, update, args):
-    logger.info("How do I received! [{}]".format(args))
-    chat_id = update.message.chat_id
-    bot.sendChatAction(chat_id, action=ChatAction.TYPING)
-    args = {'all': False,
-            'color': False,
-            'num_answers': 1,
-            'pos': 1,
-            'query': args}
-    result = howdoi_call(args).encode('utf-8', 'ignore')
-    logger.debug(result)
-    if 'inline_query' not in update.to_dict().keys():
-        bot.sendMessage(chat_id, result)
-    return result
-
-if __name__ == '__main__':
-    main()
+    def on_chosen_inline_result(self, msg):
+        result_id, from_id, query_string = telepot.glance(
+            msg, flavor='chosen_inline_result')
+        print(self.id, ':', 'Chosen Inline Result:',
+              result_id, from_id, query_string)
 
 
 def test():
     logger.info('Testing mode')
     from sys import argv
-    from mock import Mock
     argv = argv[1:]
-    bot = Mock()
-    update = Mock()
-    update.inline_query.query = argv
-    update.to_dict().keys = Mock(return_value={'message': argv})
-    result = howdoi(bot, update, argv)
+    args = {'all': False,
+            'color': False,
+            'num_answers': 1,
+            'pos': 1,
+            'query': argv}
+    result = howdoi_call(args)
     print(' ')
     print(result)
+
+
+def main():
+
+    # Get the dispatcher to register handlers
+    bot = telepot.DelegatorBot(token, [
+        (per_inline_from_id(), create_open(HowDoIBot, timeout=30)),
+        (per_chat_id(), create_open(HowDoIBot, timeout=10)),
+    ])
+    logger.info('Starting bot')
+    # bot.message_loop({'inline_query': on_inline_query,
+    #                   'chosen_inline_result': on_chosen_inline_result,
+    #                   'chat': on_chat_message},
+    #                  run_forever='Listening ...')
+    bot.message_loop(run_forever='Listening ...')
+
+if __name__ == '__main__':
+    main()
