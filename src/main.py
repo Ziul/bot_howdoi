@@ -38,7 +38,7 @@ class HowDoIBot(telepot.helper.InlineUserHandler, telepot.helper.AnswererMixin):
 
     # Ignore group messages
     def on_edited_chat_message(self, msg):
-        pass
+        self.on_chat_message(msg)
 
     def escape_markdown(self, text):
         """Helper function to escape telegram markup symbols"""
@@ -46,9 +46,9 @@ class HowDoIBot(telepot.helper.InlineUserHandler, telepot.helper.AnswererMixin):
 
     def howdoi(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
-        msg['text'] = msg['text'].replace('/howdoi', '')
+        msg['text'] = ' '.join(msg['text'].split()[1:])
         logger.info("How do I received! [{}]".format(msg['text']))
-        self.sender.sendChatAction('typing')
+        self.bot.sendChatAction(chat_id, 'typing')
         args = {'all': True,
                 'color': False,
                 'num_answers': 1,
@@ -61,12 +61,17 @@ class HowDoIBot(telepot.helper.InlineUserHandler, telepot.helper.AnswererMixin):
             result = 'Timeout finding some answer, sorry :('
         except Exception as e:
             logger.critical(e)
-        self.sender.sendMessage(result)
+        # self.sender.sendMessage(result, chat_id=chat_id)
+        self.bot.sendMessage(chat_id, result)
 
     def start(self, msg):
         print(msg)
-        self.sender.sendMessage("Hey *{}*!".format(
+        self.bot.sendMessage(msg['chat']['id'], "Hey *{}*!".format(
             msg['from']['first_name']), parse_mode='Markdown')
+        # self.sender.sendMessage("Hey *{}*!".format(
+        #     msg['from']['first_name']), parse_mode='Markdown')
+        # import ipdb
+        # ipdb.set_trace()
 
     def on_inline_query(self, msg):
         query_id, from_id, query_string = telepot.glance(
