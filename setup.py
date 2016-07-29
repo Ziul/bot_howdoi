@@ -14,6 +14,7 @@ install_requires = [
     'PyYAML',
     'ndg-httpsclient>=0.4.0',
     'pyOpenSSL>=0.15.1',
+    'telepot>=8.3',
 ]
 
 
